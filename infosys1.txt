@@ -1,0 +1,132 @@
+
+import streamlit as st
+
+st.title("Hello Streamlit 👋")
+st.write("This is my first Streamlit app!")
+
+
+
+st.text_input("Enter")
+st.title("Main Title")
+st.header("Header")
+st.subheader("Subheader")
+st.text("Simple text")
+st.markdown("**Bold**, *italic*, `code`")
+
+name = st.text_input("Enter your name:")
+age = st.number_input("Enter age:", min_value=0, max_value=100)
+hobby = st.selectbox("Choose a hobby", ["Coding", "Cricket", "Music"])
+agree = st.checkbox("I agree to terms")
+
+if agree:
+    st.success(f"Hello {name}, Age: {age}, Hobby: {hobby}")
+
+#Media files
+st.image("https://www.google.com/imgres?q=image%20ai&imgurl=https%3A%2F%2Fincubator.ucf.edu%2Fwp-content%2Fuploads%2F2023%2F07%2Fartificial-intelligence-new-technology-science-futuristic-abstract-human-brain-ai-technology-cpu-central-processor-unit-chipset-big-data-machine-learning-cyber-mind-domination-generative-ai-scaled-1.jpg&imgrefurl=https%3A%2F%2Fincubator.ucf.edu%2Fwhat-is-artificial-intelligence-ai-and-why-people-should-learn-about-it%2F&docid=4jEnd_yUBiw-_M&tbnid=erRQbvwa3FsLmM&vet=12ahUKEwjavv7Nx-KPAxVmla8BHYPmFY4QM3oECBwQAA..i&w=2560&h=1707&hcb=2&ved=2ahUKEwjavv7Nx-KPAxVmla8BHYPmFY4QM3oECBwQAA")
+# st.audio("sample.mp3")
+# st.video("sample.mp4")
+
+
+# 4. Layouts & Organization
+
+col1, col2,col3 = st.columns(3)
+col1.button("Button 1")
+col2.button("Button 2")
+col3.button("Button 3")
+
+
+# Tabs:
+
+tab1, tab2 = st.tabs(["Tab A", "Tab B"])
+with tab1:
+    st.write("Content for A")
+with tab2:
+    st.write("Content for B")
+
+
+# Siderbar
+st.sidebar.title("Sidebar Menu")
+option = st.sidebar.radio("Choose", ["Option 1", "Option 2"])
+st.sidebar.write("DEMO")
+
+
+# Data Handling and Visualization
+
+import pandas as pd
+import numpy as np
+
+df = pd.DataFrame({
+    "A": np.random.randn(10),
+    "B": np.random.randn(10)
+})
+st.dataframe(df)
+st.table(df.head())
+
+
+st.line_chart(df)
+st.bar_chart(df)
+st.area_chart(df)
+
+
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+ax.hist(df["A"], bins=5)
+st.pyplot(fig)
+
+
+# State Management
+if "count" not in st.session_state:
+    st.session_state.count=0
+
+if st.button("Increamnet"):
+    st.session_state.count=+1
+
+st.write("Counter:",st.session_state.count)
+
+
+upload_file = st.file_uploader("Upload a csv",type="csv")
+if upload_file:
+    df = pd.read_csv(upload_file)
+    st.dataframe(df)
+
+    
+
+# Advance Features:
+with st.form("my_form"):
+    name = st.text_input("Name")
+    hobby = st.selectbox("Choose a hobby", ["Coding", "Cricket", "Music"])
+    agree = st.checkbox("I agree to terms")
+    submit = st.form_submit_button("Submit")
+
+if submit:
+    st.write('Hello', name)
+
+
+# Caching (Performance optimization )
+# @st.cache_data
+# def load_data():
+#     return pd.read_csv("large_dataset.csv")
+
+# data = load_data()
+# st.dataframe(data)
+
+
+# Authentication
+import streamlit_authenticator as stauth
+
+import requests
+
+response = requests.get("https://api.github.com/users/streamlit")
+st.json(response.json())
+
+from sklearn.linear_model import LinearRegression
+X = np.array(df["A"]).reshape(-1,1)
+y = df["B"]
+
+model = LinearRegression().fit(X,y)
+st.write("Model Coeff:", model.coef_)
+
+Swapnil Kanungo
+20:32
+are we also need to show code of each milestone in streamlit ?
+boy-vczr-jpf

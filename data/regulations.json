@@ -1,0 +1,44 @@
+[
+  {
+    "id": "reg-1764167313",
+    "title": "New Data Privacy Transparency Rule",
+    "jurisdiction": "GLOBAL",
+    "date_published": "2025-11-26 19:58:33",
+    "summary": "Requires clear privacy notices and transparency about automated profiling.",
+    "keywords": [
+      "privacy",
+      "transparency",
+      "profiling",
+      "notice"
+    ],
+    "source_url": "https://example.org/privacy-rule"
+  },
+  {
+    "id": "reg-ai-1765350164",
+    "title": "AI Algorithmic Accountability Act",
+    "jurisdiction": "EU",
+    "date_published": "2025-12-10 12:32:44",
+    "summary": "Mandates audit trails for AI decisions affecting user termination.",
+    "keywords": [
+      "artificial intelligence",
+      "automated decision",
+      "algorithm",
+      "terminate"
+    ],
+    "source_url": "https://example.org/ai-act"
+  },
+  {
+    "id": "reg-liab-1765350179",
+    "title": "Digital Services Liability Standard",
+    "jurisdiction": "USA",
+    "date_published": "2025-12-10 12:32:59",
+    "summary": "Prevents unlimited liability clauses in digital service contracts.",
+    "keywords": [
+      "liability",
+      "indemnification",
+      "damages",
+      "unlimited"
+    ],
+    "source_url": "https://example.org/liability-std"
+  }
+]

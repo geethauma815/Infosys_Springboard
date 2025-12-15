@@ -1,0 +1,200 @@
+""
+Regulatory Update Tracking System & Contract Modification Module
+Single-file Python implementation using local storage (JSON + plain text files).
+
+How to use:
+1. Save this file as `regulatory_update_tracker.py` in an empty folder.
+2. Run `python regulatory_update_tracker.py` (requires Python 3.8+).
+3. The program will create a `data/` folder with sample contracts and regulations.
+4. Use the interactive menu to simulate fetching regulatory updates, check risks, auto-apply updates, and get amendment suggestions.
+
+This file is written to be readable for beginners. No external packages are required.
+
+Components implemented in this script:
+- Local storage manager (files + JSON)
+- Mock API fetcher (simulates external regulation APIs)
+- Parser / matcher to find which regulations affect which contracts
+- Risk detector (keyword based)
+- Contract modifier (simple clause insertion, versioning)
+- Suggestion engine (creates recommended amendment text)
+- Simple scheduler (polling loop) to fetch updates automatically
+- CLI menu for step-by-step use
+
+Notes for extension:
+- Replace mock_fetch_regulations() with real API calls using requests
+- Replace keyword matching with more advanced NLP (spaCy, regex, embeddings)
+- Replace local storage with a proper DB for production
+"""
+
+import os
+import json
+import shutil
+import threading
+import time
+from datetime import datetime
+from uuid import uuid4
+
+# -----------------------------
+# Configuration
+# -----------------------------
+DATA_DIR = "data"
+REGS_FILE = os.path.join(DATA_DIR, "regulations.json")
+CONTRACTS_DIR = os.path.join(DATA_DIR, "contracts")
+CONTRACT_INDEX = os.path.join(DATA_DIR, "contracts_index.json")
+POLL_INTERVAL_SECONDS = 30  # how often (seconds) the scheduler checks for updates (short for demo)
+
+# -----------------------------
+# Utility functions
+# -----------------------------
+
+def ensure_dirs():
+    os.makedirs(CONTRACTS_DIR, exist_ok=True)
+    if not os.path.exists(REGS_FILE):
+        with open(REGS_FILE, "w") as f:
+            json.dump([], f, indent=2)
+    if not os.path.exists(CONTRACT_INDEX):
+        with open(CONTRACT_INDEX, "w") as f:
+            json.dump({}, f, indent=2)
+
+
+def read_json(path):
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def write_json(path, data):
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+# -----------------------------
+# Sample data creation
+# -----------------------------
+
+def create_sample_data():
+    """Create sample contracts and a couple of regulations for demo."""
+    # two sample regulations
+    regs = [
+        {
+            "id": "reg-2025-gdpr-update",
+            "title": "GDPR: Consent Recordkeeping Update",
+            "jurisdiction": "EU",
+            "date_published": "2025-10-01",
+            "summary": "Requires explicit recording of consent metadata including timestamp and purpose.",
+            "keywords": ["consent", "personal data", "gdpr", "recordkeeping"],
+            "source_url": "https://example.org/gdpr-update"
+        },
+        {
+            "id": "reg-2025-data-localisation",
+            "title": "Data Localisation Advisory",
+            "jurisdiction": "IN",
+            "date_published": "2025-09-15",
+            "summary": "Advisory recommending storage of certain personal data within jurisdictional borders.",
+            "keywords": ["data localisation", "personal data", "cross-border"],
+            "source_url": "https://example.org/data-localisation"
+        }
+    ]
+    write_json(REGS_FILE, regs)
+
+    # sample contracts (store as text files) with a meta index (versions)
+    contract_a = {
+        "id": "contract-001",
+        "title": "SaaS Provider Agreement",
+        "jurisdiction": "EU",
+        "parties": ["Acme Corp", "Cloudy SaaS Ltd"],
+        "effective_date": "2024-01-01",
+        "version": 1,
+        "file": "contracts/contract-001-v1.txt",
+        "applied_regulations": []  # list of regulation ids applied
+    }
+
+    contract_b = {
+        "id": "contract-002"
+"title": "India Local Hosting Agreement",
+        "jurisdiction": "IN",
+        "parties": ["Acme Corp", "HostIndia Pvt"],
+        "effective_date": "2023-06-15",
+        "version": 1,
+        "file": "contracts/contract-002-v1.txt",
+        "applied_regulations": []
+    }
+
+    # write plain text contract files
+    sample_text_a = (
+        "SaaS Provider Agreement\n\n"
+        "1. Data Processing: The provider will process personal data as necessary to provide services.\n"
+        "2. Security: Provider shall maintain reasonable security.\n"
+        "3. Consent: Customer is responsible to obtain consent where required.\n"
+    )
+
+    sample_text_b = (
+        "India Local Hosting Agreement\n\n"
+        "1. Hosting: Data shall be hosted by the provider.\n"
+        "2. Cross-Border Transfer: Transfers are permitted with safeguards.\n"
+    )
+
+    write_json(CONTRACT_INDEX, {contract_a['id']: contract_a, contract_b['id']: contract_b})
+
+    # save files
+    with open(os.path.join(DATA_DIR, contract_a['file']), "w") as f:
+        f.write(sample_text_a)
+    with open(os.path.join(DATA_DIR, contract_b['file']), "w") as f:
+        f.write(sample_text_b)
+
+
+# -----------------------------
+# Mock API Fetcher
+# -----------------------------
+
+def mock_fetch_regulations():
+    """Simulate fetching regulations from external APIs.
+
+    In a real system you'd call requests.get(...) and parse responses.
+    Here we will append a sample 'new' regulation occasionally.
+    """
+    regs = read_json(REGS_FILE)
+    # For demo, sometimes add a new mock regulation
+    now = datetime.utcnow().isoformat()
+    new_reg_id = f"reg-mock-{int(time.time())}"
+    new_reg = {
+        "id": new_reg_id,
+        "title": "Mock Privacy Transparency Rule",
+        "jurisdiction": "GLOBAL",
+        "date_published": now.split(".")[0],
+        "summary": "Requires clearer privacy notices and transparency about profiling.",
+        "keywords": ["privacy", "transparency", "profiling", "notice"],
+        "source_url": "https://example.org/mock-privacy"
+    }
+    # Only append if the last regulation isn't the same title (prevent duplicates on repeated calls)
+    if not regs or regs[-1]["title"] != new_reg["title"]:
+        regs.append(new_reg)
+        write_json(REGS_FILE, regs)
+        print(f"[fetcher] New regulation fetched: {new_reg['id']}")
+        return [new_reg]
+    else:
+        print("[fetcher] No new regulations this cycle.")
+        return []
+
+
+# -----------------------------
+# Matching / Risk detection
+# -----------------------------
+
+def match_regulation_to_contract(reg, contract_meta, contract_text):
+    """Return a score and list of matched keywords indicating how relevant a regulation is to a contract.
+
+    Very simple: check if regulation keywords or jurisdiction words appear in the contract text or contract metadata.
+    """
+    text_lower = contract_text.lower()
+    matches = []
+    score = 0
+
+    # match keywords in text
+    for kw in reg.get("keywords", []):
+        if kw.lower() in text_lower:
+            matches.append(kw)
+            score += 2
+
+    # match jurisdiction (if jurisdictions match, higher relevance)
+    if reg.get("jurisdiction") and contract_meta.get("jur
+
